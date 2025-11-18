@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budgeting Buddy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* ==========================================================================
+       THEME TOKENS
+       --------------------------------------------------------------------------
+       Centralized color tokens used across the UI. Tweak here to re-skin.
+       ========================================================================== */
+    :root {
+      --bg: #0f172a;      /* slate-900 */
+      --card: #111827;    /* gray-900 */
+      --muted: #94a3b8;   /* slate-400 */
+      --text: #e5e7eb;    /* gray-200 */
+      --brand: #60a5fa;   /* blue-400 */
+      --accent: #a78bfa;  /* violet-400 */
+      --ok: #34d399;      /* emerald-400 */
+      --warn: #f59e0b;    /* amber-500 */
+      --danger: #fb7185;  /* rose-400 */
+      --ring: 0 0 0 3px rgba(96, 165, 250, .35);
+    }
+
+    /* Base resets */
+    * { box-sizing: border-box }
+
+    html, body { height: 100% }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 90% -10%, #1e293b 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+
+    /* Layout containers */
+    .container {
+      max-width: 1080px;
+      margin: 40px auto;
+      padding: 0 16px
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;   /* centers title visually */
+      text-align: center;
+    }
+
+    .title {
+      font-weight: 800;
+      letter-spacing: .4px;
+      font-size: clamp(20px, 3.5vw, 34px)
+    }
+
+    .badge {
+      color: #0f172a;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-weight: 700
+    }
+
+    /* Two-column main grid (inputs → left, results → right) */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 24px
+    }
+
+    @media (max-width:920px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* Card surface */
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .02));
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 16px;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+      overflow: hidden;
+    }
+
+    h2 {
+      margin: .1rem 0 1rem;
+      font-size: 20px
+    }
+
+    /* Form primitives */
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 14px 0 8px
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, .25);
+      background: #0b1220;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      box-shadow: var(--ring);
+      border-color: var(--brand);
+    }
+
+    /* Form rows (two columns) */
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px
+    }
+
+    /* Buttons row */
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px
+    }
+
+    .primary {
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      border: none;
+      font-weight: 700;
+      cursor: pointer
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px dashed rgba(148, 163, 184, .35);
+      cursor: pointer
+    }
+
+    .muted { color: var(--muted); font-size: 13px }
+
+    /* KPIs above chart */
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px
+    }
+
+    .kpi .item {
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 14px;
+      padding: 14px;
+      background: #0b1220
+    }
+
+    .item .label {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .item .value {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 6px
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 6px
+    }
+
+    footer {
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #0b1220;
+      border: 1px solid rgba(148, 163, 184, .2)
+    }
+
+    /* Mode-specific message box under chart */
+    .note-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #0b1220;
+      border: 1px solid rgba(148, 163, 184, .25);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .note-box strong { font-weight: 700; }
+
+    .small-note { font-size: 12px; color: var(--muted); }
+
+    /* Chart wrapper keeps layout stable (fixed height) */
+    .chart-wrap {
+      margin-top: 18px;
+      height: 320px;
+      position: relative;
+    }
+
+    /* Canvas fills wrapper without changing layout height */
+    .chart-wrap canvas {
+      display: block;           /* remove inline baseline gap */
+      width: 100% !important;
+      height: 100% !important;  /* use wrapper's fixed height */
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="title">Busy Budgeters — <span style="color:var(--brand)">Budgeting Buddy</span></div>
+    </header>
+
+    <div class="grid">
+      <!-- =========================================================
+           LEFT: Inputs
+           ========================================================= -->
+      <section class="card">
+        <h2>Budget Inputs</h2>
+
+        <!-- Calculation mode + Savings goal (goal visible in time/deposit modes only) -->
+        <div class="row">
+          <div>
+            <label for="mode">Calculation mode</label>
+            <select id="mode">
+              <option value="final" selected>Final Balance</option>
+              <option value="time">Time (months)</option>
+              <option value="deposit">Deposit Amount</option>
+            </select>
+          </div>
+          <div id="goalWrap" style="display:none">
+            <label for="goal">Savings goal ($)</label>
+            <input id="goal" type="number" min="0" placeholder="Enter your goal" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="first">First name (optional)</label>
+            <input id="first" placeholder="Jessie" />
+          </div>
+          <div>
+            <label for="last">Last name (optional)</label>
+            <input id="last" placeholder="Lee" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="bank">Bank</label>
+            <select id="bank"></select>
+          </div>
+          <div>
+            <label for="accountType">Account type</label>
+            <select id="accountType"></select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="rate">Interest rate (annual %)</label>
+            <input id="rate" type="number" step="0.01" min="0" max="10" />
+            <div class="muted">Defaults from bank (1–2%). Editable.</div>
+          </div>
+          <div>
+            <label for="balance">Current balance ($)</label>
+            <input id="balance" type="number" step="0.01" min="0" placeholder="10000" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="deposit">Monthly deposit ($)</label>
+            <input id="deposit" type="number" step="1" min="250" max="1000" placeholder="250" />
+            <div class="muted">Min $250 / Max $1000</div>
+          </div>
+          <div>
+            <label for="period">Period</label>
+            <div class="row" style="grid-template-columns: 1fr .9fr">
+              <input id="period" type="number" min="1" value="60" />
+              <select id="periodUnit">
+                <option value="months" selected>Months</option>
+                <option value="years">Years</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="err" class="error" style="display:none"></div>
+
+        <div class="actions">
+          <button id="calc" class="primary">Calculate</button>
+          <button id="reset" class="ghost">Reset</button>
+        </div>
+
+        <footer>
+          <span class="chip">No login required (can be added later)</span>
+          <span class="chip">CSV import planned</span>
+          <span class="chip">Vercel static deploy</span>
+        </footer>
+      </section>
+
+      <!-- =========================================================
+           RIGHT: Results (KPIs + chart + per-mode message)
+           ========================================================= -->
+      <section class="card">
+        <h2>Projection</h2>
+
+        <div class="kpi">
+          <div class="item">
+            <div class="label">Projected total</div>
+            <div id="kpiTotal" class="value">$0</div>
+          </div>
+          <div class="item">
+            <div class="label">Total contributions</div>
+            <div id="kpiContrib" class="value">$0</div>
+          </div>
+          <div class="item">
+            <div class="label">Interest earned</div>
+            <div id="kpiInterest" class="value">$0</div>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+        </div>
+
+        <!-- Mode-specific note (used by time/deposit summaries) -->
+        <div id="modeMsg" class="note-box" role="status" aria-live="polite" style="display:none"></div>
+        <div class="small-note" style="margin-top:6px">Line shows balance over time (monthly).</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       CONFIG
+       --------------------------------------------------------------------------
+       - BACKEND_URL / USE_BACKEND toggle server usage.
+       - BANKS contains example institutions + default APRs for account types.
+       ========================================================================== */
+    const BACKEND_URL = "";       // e.g. "https://api.yourdomain.com"
+    const USE_BACKEND = false;    // set true to call backend /api/calculate
+
+    const BANKS = { // example bank list + APRs
+      "Bank of America": {
+        accounts: {
+          "Advantage Savings (Base)": 1,
+          "Advantage Savings – Gold": 2,
+          "Advantage Savings – Platinum": 3,
+          "Advantage Savings – Platinum Honors/Diamond": 4
+        }
+      },
+      "Chase": {
+        accounts: {
+          "Chase Savings": 1,
+          "Chase Premier Savings": 2
+        }
+      },
+      "Citibank": {
+        accounts: {
+          "Citi® Savings": 3,
+          "Citi® Accelerate Savings": 3.35
+        }
+      },
+      "Wells Fargo": {
+        accounts: {
+          "Way2Save® Savings": 1,
+          "Platinum Savings": 1
+        }
+      },
+      "Capital One": {
+        accounts: {
+          "360 Performance Savings": 3.40
+        }
+      }
+    };
+
+    /* ==========================================================================
+       DOM LOOKUPS
+       --------------------------------------------------------------------------
+       Cache frequently accessed DOM nodes in one place.
+       ========================================================================== */
+    const els = {
+      bank: document.getElementById("bank"),
+      accountType: document.getElementById("accountType"),
+      rate: document.getElementById("rate"),
+      balance: document.getElementById("balance"),
+      deposit: document.getElementById("deposit"),
+      period: document.getElementById("period"),
+      unit: document.getElementById("periodUnit"),
+      calc: document.getElementById("calc"),
+      reset: document.getElementById("reset"),
+      err: document.getElementById("err"),
+      kpiTotal: document.getElementById("kpiTotal"),
+      kpiContrib: document.getElementById("kpiContrib"),
+      kpiInterest: document.getElementById("kpiInterest"),
+      chart: document.getElementById("chart"),
+      mode: document.getElementById("mode"),
+      modeMsg: document.getElementById("modeMsg"),
+      goal: document.getElementById('goal'),
+      goalWrap: document.getElementById('goalWrap'),
+    };
+
+    /* ==========================================================================
+       SELECT INITIALIZATION
+       --------------------------------------------------------------------------
+       Populate bank/account dropdowns and keep APR in sync.
+       ========================================================================== */
+    function initBanks() {
+      els.bank.innerHTML = "";
+      Object.keys(BANKS).forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name;
+        els.bank.appendChild(opt);
+      });
+      updateAccounts();
+    }
+
+    function updateAccounts() {
+      const bank = BANKS[els.bank.value];
+      els.accountType.innerHTML = "";
+      Object.entries(bank.accounts).forEach(([acc, apr]) => {
+        const opt = document.createElement("option");
+        opt.value = acc; opt.textContent = acc;
+        opt.dataset.apr = apr;
+        els.accountType.appendChild(opt);
+      });
+      // set rate based on selected account's APR
+      const apr = parseFloat(els.accountType.selectedOptions[0].dataset.apr);
+      els.rate.value = apr.toFixed(2);
+    }
+
+    // Keep APR/current account in sync
+    els.bank.addEventListener("change", updateAccounts);
+    els.accountType.addEventListener("change", () => {
+      const apr = parseFloat(els.accountType.selectedOptions[0].dataset.apr);
+      els.rate.value = apr.toFixed(2);
+    });
+
+    // Show/hide goal input depending on mode
+    els.mode.addEventListener('change', toggleGoalBox);
+
+    /* ==========================================================================
+       VALIDATION + MESSAGES
+       --------------------------------------------------------------------------
+       Basic bounds checking + per-mode message helper.
+       ========================================================================== */
+    function showError(msg) {
+      els.err.style.display = "block";
+      els.err.textContent = msg;
+    }
+    function clearError() { els.err.style.display = "none"; els.err.textContent = ""; }
+
+    function setModeMsg(txt) {
+      if (!txt) {
+        els.modeMsg.style.display = "none";
+        els.modeMsg.textContent = "";
+      } else {
+        els.modeMsg.style.display = "block";
+        els.modeMsg.innerHTML = txt;
+      }
+    }
+
+    // Toggle visibility of the "Savings goal" field for time/deposit modes
+    function toggleGoalBox() {
+      const show = els.mode.value === 'time' || els.mode.value === 'deposit';
+      if (els.goalWrap) els.goalWrap.style.display = show ? 'block' : 'none';
+      if (!show && els.goal) els.goal.value = '';
+    }
+
+    /* ==========================================================================
+       INPUT PARSING
+       --------------------------------------------------------------------------
+       Normalize inputs (months, rates) into a single object.
+       ========================================================================== */
+    function getInputs() {
+      const months = els.unit.value === "years" ? Number(els.period.value) * 12 : Number(els.period.value);
+      return {
+        bank: els.bank.value,
+        accountType: els.accountType.value,
+        rate: Number(els.rate.value) / 100, // percentage → decimal
+        balance: Number(els.balance.value || 0),
+        deposit: Number(els.deposit.value || 0),
+        months
+      };
+    }
+
+    function validate(inp) {
+      // Bounds to prevent runaway values / unreadable chart
+      if (isNaN(inp.balance) || inp.balance < 0) return "Balance must be ≥ 0.";
+      if (inp.balance > 10000000) return "Balance too large (max $10,000,000).";
+
+      if (isNaN(inp.deposit)) return "Deposit must be a number.";
+      // In deposit mode we compute the deposit amount, so skip range validation
+      const _mode = document.getElementById('mode').value;
+      if (_mode !== 'deposit') {
+        if (inp.deposit < 250 || inp.deposit > 1000) return "Monthly deposit must be between $250 and $1000.";
+      }
+
+      if (!inp.months || inp.months < 1) return "Period must be at least 1 month.";
+      if (inp.months > 600) return "Period too long. Please use ≤ 600 months (50 years).";
+
+      if (isNaN(inp.rate)) return "APR must be a number.";
+      if (inp.rate < 0 || inp.rate > 0.10) return "Please use a sensible APR (0–10%).";
+      return null;
+    }
+
+    /* ==========================================================================
+       PROJECTION (LOCAL)
+       --------------------------------------------------------------------------
+       Compound monthly:
+       A = P*(1+r/12)^n + PMT * (((1+r/12)^n - 1) / (r/12))
+       Returns:
+       - series: monthly balances
+       - total, interestEarned, contrib: summary KPIs
+       ========================================================================== */
+    function localProjection({ balance, deposit, months, rate }) {
+      const r = rate / 12;
+      // Clamp monthly rate to practical bounds to avoid exploding series
+      const rr = Math.min(Math.max(r, 0), 0.5); // 0%..50% monthly
+      // Guard for extreme months (validated already; 2nd line of defense)
+      const n = Math.min(Math.floor(months), 600);
+
+      const series = [];
+      let current = balance;
+
+      for (let m = 1; m <= n; m++) {
+        current = current * (1 + rr) + deposit;
+        series.push(Number(current.toFixed(2)));
+      }
+      const total = Number(current.toFixed(2));
+      const contrib = Number((balance + deposit * months).toFixed(2));
+      const interestEarned = Number((total - contrib).toFixed(2));
+      return { series, total, interestEarned, contrib };
+    }
+
+    /* ==========================================================================
+       SOLVERS
+       --------------------------------------------------------------------------
+       - solveForTime: months needed to reach a target
+       - solveForDeposit: required monthly deposit to hit a target in n months
+       ========================================================================== */
+    function solveForTime({ balance, deposit, rate, target }) {
+      const r = rate / 12;
+      const rr = Math.min(Math.max(r, 0), 0.5);
+      let months = 0;
+      let current = balance;
+      while (current < target && months < 600) {
+        current = current * (1 + rr) + deposit;
+        months++;
+      }
+      return months;
+    }
+
+    function solveForDeposit({ balance, rate, months, target }) {
+      const r = rate / 12;
+      const rr = Math.min(Math.max(r, 0.0000001), 0.5);
+      const a = Math.pow(1 + rr, months);
+      const numerator = target - balance * a;
+      const denominator = (a - 1) / rr;
+      return numerator / denominator;
+    }
+
+    /* ==========================================================================
+       BACKEND (OPTIONAL)
+       --------------------------------------------------------------------------
+       If USE_BACKEND is true, call server for calculations, else use local.
+       ========================================================================== */
+    async function backendProjection(payload) {
+      const res = await fetch(`${BACKEND_URL}/api/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Backend error");
+      return res.json();
+    }
+
+    /* ==========================================================================
+       CHART
+       --------------------------------------------------------------------------
+       Single Chart.js line chart. Always destroy existing instance first.
+       ========================================================================== */
+    let chart = null;
+    function renderChart(series) {
+      const ctx = els.chart.getContext('2d');
+      const existing = Chart.getChart(ctx.canvas);
+      if (existing) { existing.destroy(); }
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: series.map((_, i) => `M${i + 1}`),
+          datasets: [{
+            label: 'Balance over time',
+            data: series,
+            tension: .25,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: v => `$${Number(v).toLocaleString()}` }
+            }
+          },
+          plugins: { legend: { display: false} }
+        }
+      });
+    }
+
+    /* ==========================================================================
+       ACTIONS
+       --------------------------------------------------------------------------
+       - Calculate: validate → compute (mode-aware) → render
+       - Reset: clear inputs → re-init selects → clear chart/messages
+       ========================================================================== */
+    els.calc.addEventListener("click", async () => {
+      clearError();
+      // prevent double-submit that can create multiple chart instances
+      els.calc.disabled = true;
+
+      const input = getInputs();
+      const bad = validate(input);
+      if (bad) { showError(bad); els.calc.disabled = false; return; }
+
+      try {
+        let data;
+        const mode = els.mode.value;
+
+        // TIME MODE → compute months to reach a target
+        if (mode === 'time') {
+          const goalStr = document.getElementById("goal").value;
+          const goal = Number(goalStr);
+          if (!goal || goal <= 0) { throw new Error('Invalid target amount.'); }
+
+          const monthsNeeded = solveForTime({
+            balance: input.balance,
+            deposit: input.deposit,
+            rate: input.rate,
+            target: goal
+          });
+
+          // Build visualization series up to computed time
+          const local = localProjection({
+            balance: input.balance,
+            deposit: input.deposit,
+            months: monthsNeeded,
+            rate: input.rate
+          });
+
+          els.kpiTotal.textContent = `$${local.total.toLocaleString()}`;
+          els.kpiContrib.textContent = `$${local.contrib.toLocaleString()}`;
+          els.kpiInterest.textContent = `$${local.interestEarned.toLocaleString()}`;
+          renderChart(local.series);
+          setModeMsg(`<strong>Time mode</strong>: about ${monthsNeeded} month(s) to reach $${goal.toLocaleString()}.`);
+          els.calc.disabled = false;
+          return;
+        }
+
+        // DEPOSIT MODE → compute monthly deposit required to hit goal in given time
+        if (mode === 'deposit') {
+          const goalStr = document.getElementById("goal").value;
+          const goal = Number(goalStr);
+          if (!goal || goal <= 0) { throw new Error('Invalid target amount.'); }
+
+          const needed = solveForDeposit({
+            balance: input.balance,
+            rate: input.rate,
+            months: input.months,
+            target: goal
+          });
+
+          const monthly = Math.max(0, needed);
+          const local = localProjection({
+            balance: input.balance,
+            deposit: monthly,
+            months: input.months,
+            rate: input.rate
+          });
+
+          els.kpiTotal.textContent = `$${local.total.toLocaleString()}`;
+          els.kpiContrib.textContent = `$${local.contrib.toLocaleString()}`;
+          els.kpiInterest.textContent = `$${local.interestEarned.toLocaleString()}`;
+          renderChart(local.series);
+          setModeMsg(`<strong>Deposit mode</strong>: ~$${monthly.toFixed(2)}/mo to reach $${goal.toLocaleString()} in ${input.months} month(s).`);
+          els.calc.disabled = false;
+          return;
+        }
+
+        // FINAL MODE → backend (if enabled) then fallback to local
+        if (USE_BACKEND && BACKEND_URL) {
+          data = await backendProjection({
+            balance: input.balance,
+            deposit: input.deposit,
+            months: input.months,
+            bank: input.bank,
+            accountType: input.accountType,
+            rate: input.rate
+          });
+
+          // Ensure series/KPIs exist (fallbacks for partial server responses)
+          if (!data.series) {
+            const local = localProjection(input);
+            data.series = local.series;
+            if (!data.total) data.total = local.total;
+            if (data.interestEarned == null) data.interestEarned = local.interestEarned;
+            data.contrib ??= local.contrib;
+          }
+        } else {
+          data = localProjection(input);
+        }
+
+        // Render exactly for requested period (months)
+        const targetLen = Math.max(1, Math.min(600, Math.floor(input.months)));
+        if (Array.isArray(data.series)) {
+          data.series = data.series.slice(0, targetLen);
+        }
+
+        els.kpiTotal.textContent = `$${data.total.toLocaleString()}`;
+        els.kpiContrib.textContent = `$${(data.contrib ?? (input.balance + input.deposit * input.months)).toLocaleString()}`;
+        els.kpiInterest.textContent = `$${(data.interestEarned ?? 0).toLocaleString()}`;
+        setModeMsg("");
+
+        // Keep chart lightweight if series is very dense
+        if (Array.isArray(data.series) && data.series.length > 600) {
+          const step = Math.ceil(data.series.length / 600);
+          data.series = data.series.filter((_, i) => i % step === 0);
+        }
+
+        if (Array.isArray(data.series) && data.series.length > 0) {
+          renderChart(data.series);
+        } else {
+          showError("No data to render. Check inputs.");
+        }
+      } catch (e) {
+        console.error(e);
+        showError("Calculation failed. Check inputs or backend URL.");
+      } finally {
+        els.calc.disabled = false;
+      }
+    });
+
+    els.reset.addEventListener("click", () => {
+      document.querySelectorAll("input").forEach(i => i.value = "");
+      initBanks();
+      els.period.value = 60; els.unit.value = "months";
+      els.kpiTotal.textContent = "$0"; els.kpiContrib.textContent = "$0"; els.kpiInterest.textContent = "$0";
+
+      const existing = Chart.getChart(els.chart);
+      if (existing) existing.destroy();
+      chart = null;
+
+      clearError();
+      setModeMsg("");
+    });
+
+    /* ==========================================================================
+       BOOT
+       --------------------------------------------------------------------------
+       Seed defaults and ensure mode-dependent UI is correct on load.
+       ========================================================================== */
+    initBanks();                 // populate selects
+    els.balance.value = 10000;   // sensible defaults
+    els.deposit.value = 250;
+    els.period.value = 60;
+    els.mode.value = 'final';
+    els.modeMsg.style.display = "none";
+    toggleGoalBox();             // respect initial mode
+  </script>
+</body>
+
+</html>
