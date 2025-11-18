@@ -40,7 +40,7 @@ The tool supports three calculation modes:
 
 ---
 
-## 🔧 Backend Integration (Optional)
+## 🔧 Backend Integration
 
 The frontend is already structured to call a backend API:
 
