@@ -1,6 +1,7 @@
 # Busy Budgeters — Budgeting Buddy
 
 A clean, interactive budgeting projection tool that helps users estimate savings growth using compound interest.  
+This version includes full backend support using FastAPI for accurate compound‑interest projections.  
 This project includes a fully functional **frontend** interface and is ready for **backend integration** via a simple configuration toggle.
 
 ---
@@ -40,61 +41,94 @@ The tool supports three calculation modes:
 
 ---
 
-## 🔧 Backend Integration
+## 🔧 Backend Integration (FastAPI)
 
-The frontend is already structured to call a backend API:
+The project now supports **full backend computation** using a FastAPI server.
+
+### How to enable backend mode
+In the frontend (`index.html`), update the configuration block:
 
 ```js
-const BACKEND_URL = "";
-const USE_BACKEND = false;
-To connect a backend:
+const BACKEND_URL = "https://your-render-backend-url.onrender.com";
+const USE_BACKEND = true;
+```
 
-Set BACKEND_URL = "https://api-server.com".
+### Expected API Endpoint
+The backend must expose the following endpoint:
 
-Set USE_BACKEND = true.
+```
+POST /api/calculate
+```
 
-Implement the /api/calculate endpoint to accept:
-
-json
-Copy code
+### Request Body
+```json
 {
+  "mode": "final" | "time" | "deposit",
   "balance": number,
   "deposit": number,
   "months": number,
-  "bank": string,
-  "accountType": string,
-  "rate": number
+  "rate": number,
+  "goal": number | null
 }
-If the backend is offline or returns incomplete data, the system automatically falls back to local projection mode.
+```
+
+### Response Format
+```json
+{
+  "series": [number],
+  "total": number,
+  "contrib": number,
+  "interestEarned": number,
+  "monthsNeeded": number | null,
+  "requiredDeposit": number | null
+}
+```
+
+The backend handles all compound‑interest calculations, and the frontend displays the projected monthly balances, KPIs, and charts.
 
 📂 Project Structure
-bash
-Copy code
+```
 /
-├── Busy Budgeters — Budgeting Buddy.html   # Main frontend app
+├── Backend/
+│   ├── app.py                  # FastAPI server (live endpoint: /api/calculate)
+│   ├── BudgetingBuddy.py       # Core compound‑interest logic
+│   ├── requirements.txt        # Render deployment
+│
+├── Frontend/
+│   ├── index.html              # Main UI (Chart.js + client logic)
+│
 └── README.md
-(Optional: Add a /public or /assets folder later if you include images or icons.)
+```
 
 🚀 Running the Project
-This project is fully client-side and requires no build step.
 
-Option 1 — Double-click to open
-Just open the HTML file in any browser:
+## Frontend (Vercel-ready)
+No build step required. You can run it by opening:
 
-nginx
-Copy code
-Busy Budgeters — Budgeting Buddy.html
-Option 2 — Serve locally
-If you want clean paths or plan to add backend:
+```
+index.html
+```
 
-bash
-Copy code
+or serving it locally:
+
+```bash
 npx serve .
-or with Python:
-
-bash
-Copy code
+# or
 python3 -m http.server
+```
+
+## Backend (FastAPI)
+From the `/Backend` directory:
+
+```bash
+uvicorn app:app --reload
+```
+
+Production deployment is configured for **Render** with:
+
+```
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
 🧩 Tech Stack
 Component	Technology
 UI	HTML / CSS / JS
