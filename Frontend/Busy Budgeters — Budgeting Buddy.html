@@ -16,15 +16,15 @@
        Centralized color tokens used across the UI. Tweak here to re-skin.
        ========================================================================== */
     :root {
-      --bg: #0f172a;      /* slate-900 */
-      --card: #111827;    /* gray-900 */
-      --muted: #94a3b8;   /* slate-400 */
-      --text: #e5e7eb;    /* gray-200 */
-      --brand: #60a5fa;   /* blue-400 */
-      --accent: #a78bfa;  /* violet-400 */
-      --ok: #34d399;      /* emerald-400 */
-      --warn: #f59e0b;    /* amber-500 */
-      --danger: #fb7185;  /* rose-400 */
+      --bg: #0f172a;     
+      --card: #111827;    
+      --muted: #94a3b8;   
+      --text: #e5e7eb;   
+      --brand: #60a5fa;   
+      --accent: #a78bfa;  
+      --ok: #34d399;     
+      --warn: #f59e0b;    
+      --danger: #fb7185;  
       --ring: 0 0 0 3px rgba(96, 165, 250, .35);
     }
 
@@ -365,8 +365,8 @@
        - BACKEND_URL / USE_BACKEND toggle server usage.
        - BANKS contains example institutions + default APRs for account types.
        ========================================================================== */
-    const BACKEND_URL = "";       // e.g. "https://api.yourdomain.com"
-    const USE_BACKEND = false;    // set true to call backend /api/calculate
+    const BACKEND_URL = "http://127.0.0.1:8000";       // FastAPI backend (local dev)
+    const USE_BACKEND = true;    // use backend /api/calculate for all modes
 
     const BANKS = { // example bank list + APRs
       "Bank of America": {
@@ -532,61 +532,6 @@
       return null;
     }
 
-    /* ==========================================================================
-       PROJECTION (LOCAL)
-       --------------------------------------------------------------------------
-       Compound monthly:
-       A = P*(1+r/12)^n + PMT * (((1+r/12)^n - 1) / (r/12))
-       Returns:
-       - series: monthly balances
-       - total, interestEarned, contrib: summary KPIs
-       ========================================================================== */
-    function localProjection({ balance, deposit, months, rate }) {
-      const r = rate / 12;
-      // Clamp monthly rate to practical bounds to avoid exploding series
-      const rr = Math.min(Math.max(r, 0), 0.5); // 0%..50% monthly
-      // Guard for extreme months (validated already; 2nd line of defense)
-      const n = Math.min(Math.floor(months), 600);
-
-      const series = [];
-      let current = balance;
-
-      for (let m = 1; m <= n; m++) {
-        current = current * (1 + rr) + deposit;
-        series.push(Number(current.toFixed(2)));
-      }
-      const total = Number(current.toFixed(2));
-      const contrib = Number((balance + deposit * months).toFixed(2));
-      const interestEarned = Number((total - contrib).toFixed(2));
-      return { series, total, interestEarned, contrib };
-    }
-
-    /* ==========================================================================
-       SOLVERS
-       --------------------------------------------------------------------------
-       - solveForTime: months needed to reach a target
-       - solveForDeposit: required monthly deposit to hit a target in n months
-       ========================================================================== */
-    function solveForTime({ balance, deposit, rate, target }) {
-      const r = rate / 12;
-      const rr = Math.min(Math.max(r, 0), 0.5);
-      let months = 0;
-      let current = balance;
-      while (current < target && months < 600) {
-        current = current * (1 + rr) + deposit;
-        months++;
-      }
-      return months;
-    }
-
-    function solveForDeposit({ balance, rate, months, target }) {
-      const r = rate / 12;
-      const rr = Math.min(Math.max(r, 0.0000001), 0.5);
-      const a = Math.pow(1 + rr, months);
-      const numerator = target - balance * a;
-      const denominator = (a - 1) / rr;
-      return numerator / denominator;
-    }
 
     /* ==========================================================================
        BACKEND (OPTIONAL)
@@ -648,125 +593,88 @@
        ========================================================================== */
     els.calc.addEventListener("click", async () => {
       clearError();
-      // prevent double-submit that can create multiple chart instances
       els.calc.disabled = true;
 
       const input = getInputs();
       const bad = validate(input);
-      if (bad) { showError(bad); els.calc.disabled = false; return; }
+      if (bad) {
+        showError(bad);
+        els.calc.disabled = false;
+        return;
+      }
+
+      const mode = els.mode.value;
+      const goalField = document.getElementById("goal");
+      let goal = null;
+
+      // goal is required for time/deposit modes
+      if (mode === "time" || mode === "deposit") {
+        goal = Number(goalField.value);
+        if (!goal || goal <= 0) {
+          showError("Savings goal must be greater than 0.");
+          els.calc.disabled = false;
+          return;
+        }
+      }
+
+      if (!USE_BACKEND || !BACKEND_URL) {
+        showError("Backend is not configured. Please set BACKEND_URL and USE_BACKEND.");
+        els.calc.disabled = false;
+        return;
+      }
 
       try {
-        let data;
-        const mode = els.mode.value;
+        const payload = {
+          mode,
+          balance: input.balance,
+          deposit: input.deposit,
+          months: input.months,
+          rate: input.rate,
+          goal
+        };
 
-        // TIME MODE → compute months to reach a target
-        if (mode === 'time') {
-          const goalStr = document.getElementById("goal").value;
-          const goal = Number(goalStr);
-          if (!goal || goal <= 0) { throw new Error('Invalid target amount.'); }
+        const data = await backendProjection(payload);
 
-          const monthsNeeded = solveForTime({
-            balance: input.balance,
-            deposit: input.deposit,
-            rate: input.rate,
-            target: goal
-          });
-
-          // Build visualization series up to computed time
-          const local = localProjection({
-            balance: input.balance,
-            deposit: input.deposit,
-            months: monthsNeeded,
-            rate: input.rate
-          });
-
-          els.kpiTotal.textContent = `$${local.total.toLocaleString()}`;
-          els.kpiContrib.textContent = `$${local.contrib.toLocaleString()}`;
-          els.kpiInterest.textContent = `$${local.interestEarned.toLocaleString()}`;
-          renderChart(local.series);
-          setModeMsg(`<strong>Time mode</strong>: about ${monthsNeeded} month(s) to reach $${goal.toLocaleString()}.`);
+        // Basic safety: ensure we have a series array
+        if (!Array.isArray(data.series) || data.series.length === 0) {
+          showError("Backend returned no series data. Check inputs or server.");
           els.calc.disabled = false;
           return;
-        }
-
-        // DEPOSIT MODE → compute monthly deposit required to hit goal in given time
-        if (mode === 'deposit') {
-          const goalStr = document.getElementById("goal").value;
-          const goal = Number(goalStr);
-          if (!goal || goal <= 0) { throw new Error('Invalid target amount.'); }
-
-          const needed = solveForDeposit({
-            balance: input.balance,
-            rate: input.rate,
-            months: input.months,
-            target: goal
-          });
-
-          const monthly = Math.max(0, needed);
-          const local = localProjection({
-            balance: input.balance,
-            deposit: monthly,
-            months: input.months,
-            rate: input.rate
-          });
-
-          els.kpiTotal.textContent = `$${local.total.toLocaleString()}`;
-          els.kpiContrib.textContent = `$${local.contrib.toLocaleString()}`;
-          els.kpiInterest.textContent = `$${local.interestEarned.toLocaleString()}`;
-          renderChart(local.series);
-          setModeMsg(`<strong>Deposit mode</strong>: ~$${monthly.toFixed(2)}/mo to reach $${goal.toLocaleString()} in ${input.months} month(s).`);
-          els.calc.disabled = false;
-          return;
-        }
-
-        // FINAL MODE → backend (if enabled) then fallback to local
-        if (USE_BACKEND && BACKEND_URL) {
-          data = await backendProjection({
-            balance: input.balance,
-            deposit: input.deposit,
-            months: input.months,
-            bank: input.bank,
-            accountType: input.accountType,
-            rate: input.rate
-          });
-
-          // Ensure series/KPIs exist (fallbacks for partial server responses)
-          if (!data.series) {
-            const local = localProjection(input);
-            data.series = local.series;
-            if (!data.total) data.total = local.total;
-            if (data.interestEarned == null) data.interestEarned = local.interestEarned;
-            data.contrib ??= local.contrib;
-          }
-        } else {
-          data = localProjection(input);
         }
 
         // Render exactly for requested period (months)
         const targetLen = Math.max(1, Math.min(600, Math.floor(input.months)));
-        if (Array.isArray(data.series)) {
-          data.series = data.series.slice(0, targetLen);
-        }
+        let series = data.series.slice(0, targetLen);
 
-        els.kpiTotal.textContent = `$${data.total.toLocaleString()}`;
+        els.kpiTotal.textContent = `$${(data.total ?? 0).toLocaleString()}`;
         els.kpiContrib.textContent = `$${(data.contrib ?? (input.balance + input.deposit * input.months)).toLocaleString()}`;
         els.kpiInterest.textContent = `$${(data.interestEarned ?? 0).toLocaleString()}`;
-        setModeMsg("");
+
+        // Mode-specific explanatory message using backend metadata
+        if (mode === "time" && data.monthsNeeded != null) {
+          setModeMsg(
+            `<strong>Time mode</strong>: about ${data.monthsNeeded} month(s) to reach $${goal.toLocaleString()}.`
+          );
+        } else if (mode === "deposit" && data.requiredDeposit != null) {
+          setModeMsg(
+            `<strong>Deposit mode</strong>: ~$${data.requiredDeposit.toFixed(
+              2
+            )}/mo to reach $${goal.toLocaleString()} in ${input.months} month(s).`
+          );
+        } else {
+          setModeMsg("");
+        }
 
         // Keep chart lightweight if series is very dense
-        if (Array.isArray(data.series) && data.series.length > 600) {
-          const step = Math.ceil(data.series.length / 600);
-          data.series = data.series.filter((_, i) => i % step === 0);
+        if (series.length > 600) {
+          const step = Math.ceil(series.length / 600);
+          series = series.filter((_, i) => i % step === 0);
         }
 
-        if (Array.isArray(data.series) && data.series.length > 0) {
-          renderChart(data.series);
-        } else {
-          showError("No data to render. Check inputs.");
-        }
+        renderChart(series);
       } catch (e) {
         console.error(e);
-        showError("Calculation failed. Check inputs or backend URL.");
+        showError("Calculation failed. Check inputs or backend server.");
       } finally {
         els.calc.disabled = false;
       }
@@ -791,13 +699,13 @@
        --------------------------------------------------------------------------
        Seed defaults and ensure mode-dependent UI is correct on load.
        ========================================================================== */
-    initBanks();                 // populate selects
-    els.balance.value = 10000;   // sensible defaults
+    initBanks();                 
+    els.balance.value = 10000;   
     els.deposit.value = 250;
     els.period.value = 60;
     els.mode.value = 'final';
     els.modeMsg.style.display = "none";
-    toggleGoalBox();             // respect initial mode
+    toggleGoalBox();             
   </script>
 </body>
 
