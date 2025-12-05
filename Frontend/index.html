@@ -10,11 +10,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    /* ==========================================================================
-       THEME TOKENS
+    /*THEME TOKENS
        --------------------------------------------------------------------------
-       Centralized color tokens used across the UI. Tweak here to re-skin.
-       ========================================================================== */
+       Centralized color tokens used across the UI. Tweak here to re-skin.*/
     :root {
       --bg: #0f172a;
       --card: #111827;
@@ -319,9 +317,7 @@
     </header>
 
     <div class="grid">
-      <!-- =========================================================
-           LEFT: Inputs
-           ========================================================= -->
+      <!-- LEFT: Inputs -->
       <section class="card">
         <h2>Budget Inputs</h2>
 
@@ -407,9 +403,7 @@
         </footer>
       </section>
 
-      <!-- =========================================================
-           RIGHT: Results (KPIs + chart + per-mode message)
-           ========================================================= -->
+      <!-- RIGHT: Results (KPIs + chart + per-mode message) -->
       <section class="card">
         <h2>Projection</h2>
 
@@ -440,9 +434,7 @@
   </div>
 
   <script>
-    /* ==========================================================================
-       AUTH GUARD + LOGOUT
-       ========================================================================== */
+    /* AUTH GUARD + LOGOUT */
     const storedUser = localStorage.getItem("user");
     if (!storedUser) {
       // If no logged-in user, send back to login page
@@ -471,12 +463,9 @@
       });
     }
 
-    /* ==========================================================================
-       CONFIG
-       --------------------------------------------------------------------------
+    /* CONFIG
        - BACKEND_URL / USE_BACKEND toggle server usage.
-       - BANKS contains example institutions + default APRs for account types.
-       ========================================================================== */
+       - BANKS contains example institutions + default APRs for account types. */
     const BACKEND_URL = "https://busy-budgeters-budgeting-buddy-2.onrender.com";
     const USE_BACKEND = true;
 
@@ -514,11 +503,9 @@
       }
     };
 
-    /* ==========================================================================
-       DOM LOOKUPS
+    /* DOM LOOKUPS
        --------------------------------------------------------------------------
-       Cache frequently accessed DOM nodes in one place.
-       ========================================================================== */
+       Cache frequently accessed DOM nodes in one place. */
     const els = {
       bank: document.getElementById("bank"),
       accountType: document.getElementById("accountType"),
@@ -540,11 +527,9 @@
       goalWrap: document.getElementById('goalWrap'),
     };
 
-    /* ==========================================================================
-       SELECT INITIALIZATION
+    /*  SELECT INITIALIZATION
        --------------------------------------------------------------------------
-       Populate bank/account dropdowns and keep APR in sync.
-       ========================================================================== */
+       Populate bank/account dropdowns and keep APR in sync. */
     function initBanks() {
       els.bank.innerHTML = "";
       Object.keys(BANKS).forEach(name => {
@@ -579,11 +564,9 @@
     // Show/hide goal input depending on mode
     els.mode.addEventListener('change', toggleGoalBox);
 
-    /* ==========================================================================
-       VALIDATION + MESSAGES
+    /* VALIDATION + MESSAGES
        --------------------------------------------------------------------------
-       Basic bounds checking + per-mode message helper.
-       ========================================================================== */
+       Basic bounds checking + per-mode message helper.*/
     function showError(msg) {
       els.err.style.display = "block";
       els.err.textContent = msg;
@@ -607,11 +590,9 @@
       if (!show && els.goal) els.goal.value = '';
     }
 
-    /* ==========================================================================
-       INPUT PARSING
+    /* INPUT PARSING
        --------------------------------------------------------------------------
-       Normalize inputs (months, rates) into a single object.
-       ========================================================================== */
+       Normalize inputs (months, rates) into a single object.*/
     function getInputs() {
       const months = els.unit.value === "years" ? Number(els.period.value) * 12 : Number(els.period.value);
       return {
@@ -645,11 +626,9 @@
     }
 
 
-    /* ==========================================================================
-       BACKEND (OPTIONAL)
+    /*  BACKEND 
        --------------------------------------------------------------------------
-       If USE_BACKEND is true, call server for calculations, else use local.
-       ========================================================================== */
+       If USE_BACKEND is true, call server for calculations, else use local. */
     async function backendProjection(payload) {
       const res = await fetch(`${BACKEND_URL}/api/calculate`, {
         method: "POST",
@@ -660,11 +639,9 @@
       return res.json();
     }
 
-    /* ==========================================================================
-       CHART
+    /* CHART
        --------------------------------------------------------------------------
-       Single Chart.js line chart. Always destroy existing instance first.
-       ========================================================================== */
+       Single Chart.js line chart. Always destroy existing instance first. */
     let chart = null;
     function renderChart(series) {
       const ctx = els.chart.getContext('2d');
@@ -697,12 +674,10 @@
       });
     }
 
-    /* ==========================================================================
-       ACTIONS
+    /* ACTIONS
        --------------------------------------------------------------------------
        - Calculate: validate → compute (mode-aware) → render
-       - Reset: clear inputs → re-init selects → clear chart/messages
-       ========================================================================== */
+       - Reset: clear inputs → re-init selects → clear chart/messages*/
     els.calc.addEventListener("click", async () => {
       clearError();
       els.calc.disabled = true;
