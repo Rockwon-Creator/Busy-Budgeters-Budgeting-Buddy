@@ -16,22 +16,27 @@
        Centralized color tokens used across the UI. Tweak here to re-skin.
        ========================================================================== */
     :root {
-      --bg: #0f172a;     
-      --card: #111827;    
-      --muted: #94a3b8;   
-      --text: #e5e7eb;   
-      --brand: #60a5fa;   
-      --accent: #a78bfa;  
-      --ok: #34d399;     
-      --warn: #f59e0b;    
-      --danger: #fb7185;  
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --brand: #60a5fa;
+      --accent: #a78bfa;
+      --ok: #34d399;
+      --warn: #f59e0b;
+      --danger: #fb7185;
       --ring: 0 0 0 3px rgba(96, 165, 250, .35);
     }
 
     /* Base resets */
-    * { box-sizing: border-box }
+    * {
+      box-sizing: border-box
+    }
 
-    html, body { height: 100% }
+    html,
+    body {
+      height: 100%
+    }
 
     body {
       margin: 0;
@@ -51,7 +56,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 24px;   /* centers title visually */
+      margin-bottom: 24px;
+      /* centers title visually */
       text-align: center;
     }
 
@@ -77,7 +83,9 @@
     }
 
     @media (max-width:920px) {
-      .grid { grid-template-columns: 1fr; }
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* Card surface */
@@ -104,7 +112,9 @@
       margin: 14px 0 8px
     }
 
-    input, select, button {
+    input,
+    select,
+    button {
       width: 100%;
       padding: 12px 14px;
       border-radius: 12px;
@@ -115,7 +125,8 @@
       outline: none;
     }
 
-    input:focus, select:focus {
+    input:focus,
+    select:focus {
       box-shadow: var(--ring);
       border-color: var(--brand);
     }
@@ -147,7 +158,10 @@
       cursor: pointer
     }
 
-    .muted { color: var(--muted); font-size: 13px }
+    .muted {
+      color: var(--muted);
+      font-size: 13px
+    }
 
     /* KPIs above chart */
     .kpi {
@@ -211,9 +225,15 @@
       font-size: 14px;
       line-height: 1.45;
     }
-    .note-box strong { font-weight: 700; }
 
-    .small-note { font-size: 12px; color: var(--muted); }
+    .note-box strong {
+      font-weight: 700;
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     /* Chart wrapper keeps layout stable (fixed height) */
     .chart-wrap {
@@ -224,14 +244,75 @@
 
     /* Canvas fills wrapper without changing layout height */
     .chart-wrap canvas {
-      display: block;           /* remove inline baseline gap */
+      display: block;
+      /* remove inline baseline gap */
       width: 100% !important;
-      height: 100% !important;  /* use wrapper's fixed height */
+      height: 100% !important;
+      /* use wrapper's fixed height */
+    }
+
+    /* Top-right user bar */
+    #user-bar {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 13px;
+      z-index: 50;
+      backdrop-filter: blur(6px);
+    }
+
+    #user-bar-name {
+      color: var(--muted);
+    }
+
+    #user-bar-username {
+      font-weight: 600;
+    }
+
+    #logout-button {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: linear-gradient(135deg, #f97373, #fb7185);
+      color: #0f172a;
+      font-size: 15px;
+      box-shadow: 0 6px 16px rgba(248, 113, 113, 0.55);
+      padding: 0;
+    }
+
+    #logout-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(248, 113, 113, 0.7);
+    }
+
+    #logout-button:active {
+      transform: translateY(0);
+      box-shadow: none;
     }
   </style>
 </head>
 
 <body>
+  <!-- Top-right logged-in bar -->
+  <div id="user-bar">
+    <span id="user-bar-name">Logged in as</span>
+    <span id="user-bar-username"></span>
+    <button id="logout-button" title="Log out">🚪</button>
+  </div>
+
   <div class="container">
     <header>
       <div class="title">Busy Budgeters — <span style="color:var(--brand)">Budgeting Buddy</span></div>
@@ -320,7 +401,7 @@
         </div>
 
         <footer>
-          <span class="chip">No login required (can be added later)</span>
+          <span class="chip">Login + accounts enabled</span>
           <span class="chip">CSV import planned</span>
           <span class="chip">Vercel static deploy</span>
         </footer>
@@ -360,12 +441,43 @@
 
   <script>
     /* ==========================================================================
+       AUTH GUARD + LOGOUT
+       ========================================================================== */
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      // If no logged-in user, send back to login page
+      window.location.href = "login.html";
+    }
+
+    let currentUser = null;
+    try {
+      currentUser = storedUser ? JSON.parse(storedUser) : null;
+    } catch (e) {
+      currentUser = null;
+    }
+
+    const userBarName = document.getElementById("user-bar-name");
+    const userBarUsername = document.getElementById("user-bar-username");
+    const logoutButton = document.getElementById("logout-button");
+
+    if (currentUser && userBarUsername) {
+      userBarUsername.textContent = currentUser.username || "";
+    }
+
+    if (logoutButton) {
+      logoutButton.addEventListener("click", () => {
+        localStorage.removeItem("user");
+        window.location.href = "login.html";
+      });
+    }
+
+    /* ==========================================================================
        CONFIG
        --------------------------------------------------------------------------
        - BACKEND_URL / USE_BACKEND toggle server usage.
        - BANKS contains example institutions + default APRs for account types.
        ========================================================================== */
-    const BACKEND_URL = "https://busy-budgeters-budgeting-buddy-1.onrender.com";
+    const BACKEND_URL = "http://localhost:8000";
     const USE_BACKEND = true;
 
     const BANKS = { // example bank list + APRs
@@ -580,7 +692,7 @@
               ticks: { callback: v => `$${Number(v).toLocaleString()}` }
             }
           },
-          plugins: { legend: { display: false} }
+          plugins: { legend: { display: false } }
         }
       });
     }
@@ -607,7 +719,6 @@
       const goalField = document.getElementById("goal");
       let goal = null;
 
-      // goal is required for time/deposit modes
       if (mode === "time" || mode === "deposit") {
         goal = Number(goalField.value);
         if (!goal || goal <= 0) {
@@ -635,14 +746,12 @@
 
         const data = await backendProjection(payload);
 
-        // Basic safety: ensure we have a series array
         if (!Array.isArray(data.series) || data.series.length === 0) {
           showError("Backend returned no series data. Check inputs or server.");
           els.calc.disabled = false;
           return;
         }
 
-        // Render exactly for requested period (months)
         const targetLen = Math.max(1, Math.min(600, Math.floor(input.months)));
         let series = data.series.slice(0, targetLen);
 
@@ -650,7 +759,6 @@
         els.kpiContrib.textContent = `$${(data.contrib ?? (input.balance + input.deposit * input.months)).toLocaleString()}`;
         els.kpiInterest.textContent = `$${(data.interestEarned ?? 0).toLocaleString()}`;
 
-        // Mode-specific explanatory message using backend metadata
         if (mode === "time" && data.monthsNeeded != null) {
           setModeMsg(
             `<strong>Time mode</strong>: about ${data.monthsNeeded} month(s) to reach $${goal.toLocaleString()}.`
@@ -665,7 +773,6 @@
           setModeMsg("");
         }
 
-        // Keep chart lightweight if series is very dense
         if (series.length > 600) {
           const step = Math.ceil(series.length / 600);
           series = series.filter((_, i) => i % step === 0);
@@ -694,18 +801,14 @@
       setModeMsg("");
     });
 
-    /* ==========================================================================
-       BOOT
-       --------------------------------------------------------------------------
-       Seed defaults and ensure mode-dependent UI is correct on load.
-       ========================================================================== */
-    initBanks();                 
-    els.balance.value = 10000;   
+    
+    initBanks();
+    els.balance.value = 10000;
     els.deposit.value = 250;
     els.period.value = 60;
     els.mode.value = 'final';
     els.modeMsg.style.display = "none";
-    toggleGoalBox();             
+    toggleGoalBox();
   </script>
 </body>
 

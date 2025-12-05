@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Budgeting Buddy — Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Match app font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Same theme tokens as main app */
+    :root {
+      --bg: #0f172a;       /* background */
+      --card: #111827;     /* card base */
+      --muted: #94a3b8;    /* muted text */
+      --text: #e5e7eb;     /* main text */
+      --brand: #60a5fa;    /* blue */
+      --accent: #a78bfa;   /* purple */
+      --ok: #34d399;
+      --warn: #f59e0b;
+      --danger: #fb7185;
+      --ring: 0 0 0 3px rgba(96, 165, 250, .35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 90% -10%, #1e293b 0%, var(--bg) 60%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Wrapper to keep card centered and responsive */
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 0 16px;
+    }
+
+    /* Reuse card feel from main app */
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .02));
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 16px;
+      padding: 24px 22px 26px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #0f172a;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      margin-bottom: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, .25);
+      background: #0b1220;
+      color: var(--text);
+      outline: none;
+      margin-bottom: 14px;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      box-shadow: var(--ring);
+      border-color: var(--brand);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      color: #0f172a;
+      margin-top: 4px;
+      transition: transform 0.05s ease, box-shadow 0.05s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.65);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #error {
+      margin-top: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    #success {
+      margin-top: 4px;
+      color: var(--ok);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .helper-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .helper-row a {
+      color: var(--brand);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .helper-row a:hover {
+      text-decoration: underline;
+    }
+
+    .app-note {
+      margin-top: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div style="text-align:center;">
+        <div class="badge">Welcome to</div>
+        <h1>Budgeting Buddy</h1>
+      </div>
+      <p class="subtitle">Log in to start saving</p>
+
+      <form id="login-form">
+        <div>
+          <label for="identifier">Email or Username</label>
+          <input id="identifier" type="text" autocomplete="username" />
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" />
+        </div>
+
+        <button type="submit" id="login-button">Log In</button>
+
+        <div id="error"></div>
+        <div id="success"></div>
+
+        <div class="helper-row">
+          <span>New here?</span>
+          <a href="register.html">Create an account</a>
+        </div>
+        
+      </form>
+
+      <div class="app-note">
+        Prototype for <strong>Budgeting Buddy</strong> web app.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("login-form");
+    const errorEl = document.getElementById("error");
+    const successEl = document.getElementById("success");
+    const button = document.getElementById("login-button");
+
+    // For local dev with uvicorn: "http://localhost:8000"
+    // If you deploy auth to the same backend as the calculator, use that URL.
+    const API_BASE = "http://localhost:8000";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      errorEl.textContent = "";
+      successEl.textContent = "";
+
+      const identifier = document.getElementById("identifier").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!identifier || !password) {
+        errorEl.textContent = "Please enter your email/username and password.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Logging in...";
+
+      try {
+        const response = await fetch(`${API_BASE}/api/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier, password }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          errorEl.textContent = data.detail || "Invalid credentials.";
+        } else {
+          const user = await response.json();
+          // Store simple "session"
+          localStorage.setItem("user", JSON.stringify(user));
+          successEl.textContent = "Login successful! Redirecting...";
+
+          // Change this if your main page has a different filename
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 800);
+        }
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = "Network error. Is the backend running?";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Log In";
+      }
+    });
+  </script>
+</body>
+</html>

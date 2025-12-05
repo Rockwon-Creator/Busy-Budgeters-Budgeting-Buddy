@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Budgeting Buddy — Create Account</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Match app font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --brand: #60a5fa;
+      --accent: #a78bfa;
+      --ok: #34d399;
+      --danger: #fb7185;
+      --ring: 0 0 0 3px rgba(96, 165, 250, .35);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 800px at 90% -10%, #1e293b 0%, var(--bg) 60%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid rgba(148,163,184,.18);
+      border-radius: 16px;
+      padding: 24px 22px 26px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(6px);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #0f172a;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      margin-bottom: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,.25);
+      background: #0b1220;
+      color: var(--text);
+      outline: none;
+      margin-bottom: 14px;
+    }
+
+    input:focus {
+      box-shadow: var(--ring);
+      border-color: var(--brand);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--brand), var(--accent));
+      color: #0f172a;
+      margin-top: 4px;
+      transition: transform 0.05s ease, box-shadow 0.05s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(15,23,42,0.65);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #error {
+      margin-top: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    #success {
+      margin-top: 4px;
+      color: var(--ok);
+      font-size: 13px;
+      min-height: 18px;
+    }
+
+    .helper-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .helper-row a {
+      color: var(--brand);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .helper-row a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div style="text-align:center;">
+        <div class="badge">Get started</div>
+        <h1>Create your Budgeting Buddy account</h1>
+      </div>
+      <p class="subtitle">Sign up to start building your savings plan.</p>
+
+      <form id="register-form">
+        <div>
+          <label for="username">Username</label>
+          <input id="username" type="text" autocomplete="username" />
+        </div>
+
+        <div>
+          <label for="email">Email (optional)</label>
+          <input id="email" type="email" autocomplete="email" />
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="new-password" />
+        </div>
+
+        <div>
+          <label for="confirm">Confirm Password</label>
+          <input id="confirm" type="password" autocomplete="new-password" />
+        </div>
+
+        <button type="submit" id="register-button">Create Account</button>
+
+        <div id="error"></div>
+        <div id="success"></div>
+
+        <div class="helper-row">
+          <span>Already have an account?</span>
+          <a href="login.html">Log in</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("register-form");
+    const errorEl = document.getElementById("error");
+    const successEl = document.getElementById("success");
+    const button = document.getElementById("register-button");
+
+    const API_BASE = "http://localhost:8000";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      errorEl.textContent = "";
+      successEl.textContent = "";
+
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirm = document.getElementById("confirm").value;
+
+      if (!username) {
+        errorEl.textContent = "Please enter a username.";
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = "Password must be at least 6 characters.";
+        return;
+      }
+      if (password !== confirm) {
+        errorEl.textContent = "Passwords do not match.";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Creating account...";
+
+      try {
+        const res = await fetch(`${API_BASE}/api/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          errorEl.textContent = data.detail || "Could not create account.";
+        } else {
+          // Auto-log in: save user and redirect
+          localStorage.setItem("user", JSON.stringify(data));
+          successEl.textContent = "Account created! Redirecting...";
+
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 800);
+        }
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = "Network error. Is the backend running?";
+      } finally {
+        button.disabled = false;
+        button.textContent = "Create Account";
+      }
+    });
+  </script>
+</body>
+</html>
